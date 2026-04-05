@@ -1,0 +1,94 @@
+name: meta-mod-env
+version: "1.0.0"
+description: >
+  A simulated Meta content moderation queue where an AI agent reviews
+  flagged posts, comments, and messages and makes policy decisions
+  following Meta Community Standards.
+author: "your-hf-username"
+license: "MIT"
+python_requires: ">=3.10"
+
+environment:
+  entry_point: "server.main:app"
+  interface: "http"
+  port: 7860
+  health_endpoint: "/health"
+  reset_endpoint: "/reset"
+  step_endpoint: "/step"
+  state_endpoint: "/state"
+
+observation_space:
+  type: object
+  properties:
+    goal:
+      type: string
+      description: "Natural language task goal"
+    current_item:
+      type: object
+      description: "The flagged content item to review"
+    queue_position:
+      type: integer
+    queue_total:
+      type: integer
+    reviewed_so_far:
+      type: array
+    context:
+      type: object
+    last_action_error:
+      type: string
+      nullable: true
+
+action_space:
+  type: object
+  properties:
+    action_type:
+      type: string
+      enum: [REMOVE, KEEP, ESCALATE, ADD_WARNING_LABEL, REQUEST_CONTEXT]
+    target_item_id:
+      type: string
+    policy_violated:
+      type: string
+      nullable: true
+    reasoning:
+      type: string
+    confidence:
+      type: number
+      minimum: 0.0
+      maximum: 1.0
+
+reward:
+  type: float
+  range: [-1.0, 1.0]
+  description: "Per-step reward normalized to [0.0, 1.0] at episode end"
+
+tasks:
+  - name: basic_moderation
+    description: "Clear-cut moderation decisions, 20 items"
+    difficulty: easy
+    max_steps: 25
+    success_threshold: 0.6
+
+  - name: contextual_moderation
+    description: "Context-dependent decisions, 30 items"
+    difficulty: medium
+    max_steps: 40
+    success_threshold: 0.5
+
+  - name: adversarial_moderation
+    description: "Adversarial evasion and edge cases, 50 items"
+    difficulty: hard
+    max_steps: 60
+    success_threshold: 0.4
+
+tags:
+  - openenv
+  - content-moderation
+  - nlp
+  - trust-safety
+  - meta
+  - rl-environment
+
+hub:
+  space_id: "your-hf-username/meta-mod-env"
+  framework: "fastapi"
+  hardware: "cpu-basic"

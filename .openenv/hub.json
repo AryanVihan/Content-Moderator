@@ -1,0 +1,40 @@
+{
+  "name": "meta-mod-env",
+  "version": "1.0.0",
+  "display_name": "MetaModEnv — Meta Content Moderation",
+  "description": "AI agent environment simulating Meta content moderation queue",
+  "category": "trust-safety",
+  "tags": ["content-moderation", "nlp", "meta", "trust-safety", "openenv"],
+  "difficulty_range": ["easy", "medium", "hard"],
+  "action_type": "discrete",
+  "observation_type": "text",
+  "reward_type": "dense",
+  "tasks": [
+    {
+      "name": "basic_moderation",
+      "difficulty": "easy",
+      "expected_score_range": [0.80, 0.95]
+    },
+    {
+      "name": "contextual_moderation",
+      "difficulty": "medium",
+      "expected_score_range": [0.50, 0.70]
+    },
+    {
+      "name": "adversarial_moderation",
+      "difficulty": "hard",
+      "expected_score_range": [0.35, 0.55]
+    }
+  ],
+  "infrastructure": {
+    "min_cpu": 1,
+    "min_memory_gb": 2,
+    "max_memory_gb": 8,
+    "requires_gpu": false
+  },
+  "deployment": {
+    "hf_space": "your-username/meta-mod-env",
+    "docker_image": "meta-mod-env:latest",
+    "port": 7860
+  }
+}
