@@ -4,7 +4,7 @@ description: >
   A simulated Meta content moderation queue where an AI agent reviews
   flagged posts, comments, and messages and makes policy decisions
   following Meta Community Standards.
-author: "your-hf-username"
+author: "Aryan176"
 license: "MIT"
 python_requires: ">=3.10"
 
@@ -89,6 +89,6 @@ tags:
   - rl-environment
 
 hub:
-  space_id: "your-hf-username/meta-mod-env"
+  space_id: "Aryan176/meta-mod-env"
   framework: "fastapi"
   hardware: "cpu-basic"

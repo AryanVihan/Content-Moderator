@@ -33,7 +33,7 @@
     "requires_gpu": false
   },
   "deployment": {
-    "hf_space": "your-username/meta-mod-env",
+    "hf_space": "Aryan176/meta-mod-env",
     "docker_image": "meta-mod-env:latest",
     "port": 7860
   }
