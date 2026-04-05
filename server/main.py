@@ -75,6 +75,78 @@ class StepRequest(BaseModel):
 # Endpoints
 # ---------------------------------------------------------------------------
 
+@app.get("/")
+async def root():
+    """Landing page — links to docs and available endpoints."""
+    from fastapi.responses import HTMLResponse
+    html = """<!DOCTYPE html>
+<html>
+<head>
+  <title>MetaModEnv</title>
+  <style>
+    body { font-family: sans-serif; max-width: 700px; margin: 60px auto; padding: 0 20px; color: #1a1a1a; }
+    h1 { font-size: 1.8rem; }
+    .badge { background:#2563eb; color:#fff; border-radius:4px; padding:2px 8px; font-size:.8rem; }
+    .badge.green { background:#16a34a; }
+    .badge.orange { background:#d97706; }
+    .badge.red { background:#dc2626; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+    th, td { text-align:left; padding:8px 12px; border-bottom:1px solid #e5e7eb; }
+    th { background:#f9fafb; }
+    a { color:#2563eb; text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    code { background:#f3f4f6; padding:2px 6px; border-radius:3px; font-size:.9rem; }
+    .section { margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <h1>🛡️ MetaModEnv</h1>
+  <p>OpenEnv — Meta Content Moderation Simulation Environment</p>
+
+  <div class="section">
+    <h2>Quick Links</h2>
+    <ul>
+      <li><a href="/docs">Interactive API Docs (Swagger UI)</a></li>
+      <li><a href="/health">Health Check</a></li>
+      <li><a href="/tasks">Available Tasks</a></li>
+      <li><a href="/state">Current State</a></li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Tasks</h2>
+    <table>
+      <tr><th>Task</th><th>Difficulty</th><th>Queue</th><th>Expected Score</th></tr>
+      <tr><td><code>basic_moderation</code></td><td><span class="badge green">EASY</span></td><td>20 items</td><td>0.80 – 0.95</td></tr>
+      <tr><td><code>contextual_moderation</code></td><td><span class="badge orange">MEDIUM</span></td><td>30 items</td><td>0.50 – 0.70</td></tr>
+      <tr><td><code>adversarial_moderation</code></td><td><span class="badge red">HARD</span></td><td>50 items</td><td>0.35 – 0.55</td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>API Usage</h2>
+    <p>Start a session:</p>
+    <pre><code>POST /reset
+{"task_name": "basic_moderation", "session_id": "my_session"}</code></pre>
+    <p>Submit a decision:</p>
+    <pre><code>POST /step
+{"action": {"action_type": "REMOVE", "target_item_id": "...",
+ "policy_violated": "HATE_SPEECH", "reasoning": "...", "confidence": 0.9},
+ "session_id": "my_session"}</code></pre>
+  </div>
+
+  <div class="section">
+    <p style="color:#6b7280;font-size:.85rem;">
+      v1.0.0 &nbsp;·&nbsp;
+      <a href="https://github.com/AryanVihan/Content-Moderator">GitHub</a> &nbsp;·&nbsp;
+      OpenEnv compliant
+    </p>
+  </div>
+</body>
+</html>"""
+    return HTMLResponse(content=html)
+
+
 @app.get("/health")
 async def health() -> Dict[str, str]:
     """Deployment ping — returns 200 OK."""
