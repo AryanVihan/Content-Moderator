@@ -1,20 +1,30 @@
 """app.py — OpenEnv entry point for MetaModEnv.
 
 This module satisfies the OpenEnv server entry point convention:
-  [project.scripts] server = "server.app:main"
+  entry_point: "server.app:main"
 """
+import os
+
 import uvicorn
-from server.main import app  # noqa: F401
 
 
 def main() -> None:
-    """Start the MetaModEnv FastAPI server."""
+    """
+    OpenEnv entry point. Called by openenv validate and openenv run.
+    Starts the FastAPI server on port 7860.
+    """
+    host = os.environ.get("HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT", "7860"))
+    reload = os.environ.get("RELOAD", "false").lower() == "true"
+
     uvicorn.run(
         "server.main:app",
-        host="0.0.0.0",
-        port=7860,
+        host=host,
+        port=port,
+        reload=reload,
         workers=1,
         timeout_keep_alive=30,
+        access_log=True,
     )
 
 

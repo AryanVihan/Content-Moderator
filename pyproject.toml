@@ -1,50 +1,59 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "meta-mod-env"
 version = "1.0.0"
-description = "OpenEnv — Meta Content Moderation Simulation Environment"
+description = "OpenEnv environment simulating Meta content moderation queue"
 readme = "README.md"
-license = { text = "MIT" }
+license = {text = "MIT"}
 requires-python = ">=3.10"
 authors = [
-  { name = "AryanVihan", email = "aryanvihan888@gmail.com" }
+    {name = "AryanVihan", email = "aryanvihan888@gmail.com"},
 ]
-keywords = ["openenv", "content-moderation", "meta", "nlp", "trust-safety"]
+keywords = [
+    "openenv",
+    "content-moderation",
+    "reinforcement-learning",
+    "ai-environment",
+    "nlp",
+    "trust-safety",
+]
 classifiers = [
-  "Programming Language :: Python :: 3",
-  "License :: OSI Approved :: MIT License",
-  "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
-  "fastapi==0.115.0",
-  "uvicorn[standard]==0.30.0",
-  "pydantic>=2.7.2",
-  "httpx==0.27.0",
-  "openai==1.30.0",
-  "python-dotenv==1.0.1",
-  "gradio>=4.0.0",
-  "mcp>=1.0.0",
-  "openenv-core>=0.1.0",
-  "requests>=2.28.0",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
+    "pydantic>=2.7.0",
+    "httpx>=0.27.0",
+    "openai>=1.30.0",
+    "python-dotenv>=1.0.1",
+    "gradio>=4.0.0",
+    "mcp>=1.0.0",
+    "openenv-core>=0.1.0",
+    "requests>=2.28.0",
 ]
 
 [project.scripts]
-server = "server.app:main"
+meta-mod-env = "server.app:main"
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["server*"]
+[project.urls]
+Homepage = "https://huggingface.co/spaces/Aryan176/meta-mod-env"
+Repository = "https://github.com/AryanVihan/Content-Moderator"
 
-[tool.openenv]
-name = "meta-mod-env"
-version = "1.0.0"
-entry_point = "server.main:app"
-interface = "http"
-port = 7860
-health_endpoint = "/health"
-reset_endpoint = "/reset"
-step_endpoint = "/step"
-state_endpoint = "/state"
+[tool.hatch.build.targets.wheel]
+packages = ["server"]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "httpx>=0.27.0",
+]

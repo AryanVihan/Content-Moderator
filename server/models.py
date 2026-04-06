@@ -27,6 +27,8 @@ class ContentItem(BaseModel):
     is_evasion: bool = Field(default=False, exclude=True)
     is_coordinated: bool = Field(default=False, exclude=True)
     needs_context: bool = Field(default=False, exclude=True)
+    category: Optional[str] = Field(default=None, exclude=True)
+    is_urgent_escalation: bool = Field(default=False, exclude=True)
 
 
 class AgentVisibleContentItem(BaseModel):

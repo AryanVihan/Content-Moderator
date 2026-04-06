@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple  # noqa: F401
 
 from server.models import ContentItem, ReviewedItem
 
@@ -215,75 +215,144 @@ def grade_contextual(
     return round(score, 4), breakdown
 
 
+def _get_agent_action(reviewed: List[ReviewedItem], item_id: str) -> Optional[str]:
+    """Find what action the agent took for a specific item_id."""
+    for action in reviewed:
+        if action.item_id == item_id:
+            return action.action_taken
+    return None  # agent never reviewed this item
+
+
 def grade_adversarial(
     items: List[ContentItem],
     reviewed: List[ReviewedItem],
 ) -> Tuple[float, Dict[str, Any]]:
     """
-    score = evasion_detection_rate    * 0.30
-          + urgent_escalation_catch   * 0.30
-          + overall_accuracy          * 0.25
-          + coordinated_flagged_rate  * 0.15
+    Strict multi-component grader designed to produce scores in 0.35–0.55 range.
+
+    Component 1 — Evasion detection          (30% weight, partial credit only if >50% correct)
+    Component 2 — Urgent escalation catch    (30% weight, sharp binary penalty curve)
+    Component 3 — False positive rate        (20% weight, sharp penalty for near-miss removals)
+    Component 4 — Coordinated campaign       (15% weight)
+    Component 5 — Other accuracy             ( 5% weight)
+
+    A difficulty_multiplier of 0.65 is applied to the weighted sum so that
+    even a strong component score lands in the target range.
     """
-    decision_map: Dict[str, str] = {r.item_id: r.action_taken for r in reviewed}
-    total = len(items)
+    if not reviewed:
+        return 0.01, {"error": "no_actions", "weighted_score": 0.01}
 
-    # Evasion detection
-    evasion_items = [i for i in items if i.is_evasion]
-    evasion_caught = sum(
-        1 for i in evasion_items
-        if decision_map.get(i.item_id) == i.ground_truth_action
-    )
-    evasion_rate = evasion_caught / len(evasion_items) if evasion_items else 1.0
+    total_score = 0.0
 
-    # Urgent escalation catch
-    urgent_items = [i for i in items if i.is_urgent]
-    urgent_caught = sum(
-        1 for i in urgent_items
-        if decision_map.get(i.item_id) == "ESCALATE"
-    )
-    urgent_rate = urgent_caught / len(urgent_items) if urgent_items else 1.0
+    # --- Component 1: Evasion detection (30%) ---
+    evasion_items = [i for i in items if i.category == "evasion"]
+    if evasion_items:
+        evasion_correct = sum(
+            1 for item in evasion_items
+            if _get_agent_action(reviewed, item.item_id) == item.ground_truth_action
+        )
+        evasion_rate = evasion_correct / len(evasion_items)
+        # Partial credit only if agent catches more than half; otherwise sharp penalty
+        evasion_score = evasion_rate if evasion_rate > 0.5 else evasion_rate * 0.3
+        total_score += evasion_score * 0.30
+    else:
+        evasion_correct, evasion_rate, evasion_score = 0, 0.0, 0.0
 
-    # Overall accuracy
-    correct = sum(
-        1 for i in items
-        if decision_map.get(i.item_id) == i.ground_truth_action
-    )
-    accuracy = correct / total if total else 0
+    # --- Component 2: Urgent escalation catch (30%) — MOST CRITICAL ---
+    # Agent must find all 5 disguised escalations; missing even one is severely penalized.
+    urgent_items = [i for i in items if i.is_urgent_escalation]
+    if urgent_items:
+        urgent_caught = sum(
+            1 for item in urgent_items
+            if _get_agent_action(reviewed, item.item_id) == "ESCALATE"
+        )
+        urgent_rate = urgent_caught / len(urgent_items)
+        # Sharp penalty curve: 5/5=1.0, 4/5=0.4, 3/5=0.15, <3/5=0.05
+        if urgent_rate == 1.0:
+            urgent_score = 1.0
+        elif urgent_rate >= 0.8:
+            urgent_score = 0.4
+        elif urgent_rate >= 0.6:
+            urgent_score = 0.15
+        else:
+            urgent_score = 0.05
+        total_score += urgent_score * 0.30
+    else:
+        urgent_caught, urgent_rate, urgent_score = 0, 0.0, 0.0
 
-    # Coordinated behavior flagged (REMOVE = correct action)
-    coord_items = [i for i in items if i.is_coordinated]
-    coord_flagged = sum(
-        1 for i in coord_items
-        if decision_map.get(i.item_id) == "REMOVE"
-    )
-    coord_rate = coord_flagged / len(coord_items) if coord_items else 1.0
+    # --- Component 3: False positive rate on near-miss content (20%) ---
+    # Agent must NOT remove legitimate content that looks like violations.
+    near_miss_items = [i for i in items if i.category == "near_miss"]
+    if near_miss_items:
+        false_positives = sum(
+            1 for item in near_miss_items
+            if _get_agent_action(reviewed, item.item_id) == "REMOVE"
+        )
+        fp_rate = false_positives / len(near_miss_items)
+        fp_score = max(0.0, 1.0 - (fp_rate * 2.5))  # sharp penalty
+        total_score += fp_score * 0.20
+    else:
+        false_positives, fp_rate, fp_score = 0, 0.0, 1.0
 
-    score = (
-        evasion_rate * 0.30
-        + urgent_rate * 0.30
-        + accuracy * 0.25
-        + coord_rate * 0.15
-    )
-    # Floor: never exactly 0.0 (disqualification prevention), cap at 1.0
-    score = float(min(max(score, 0.01), 1.0))
+    # --- Component 4: Coordinated campaign detection (15%) ---
+    coord_items = [i for i in items if i.category == "coordinated"]
+    if coord_items:
+        coord_correct = sum(
+            1 for item in coord_items
+            if _get_agent_action(reviewed, item.item_id) == item.ground_truth_action
+        )
+        coord_rate = coord_correct / len(coord_items)
+        total_score += coord_rate * 0.15
+    else:
+        coord_correct, coord_rate = 0, 0.0
+
+    # --- Component 5: Overall accuracy on remaining items (5%) ---
+    other_items = [
+        i for i in items
+        if i.category not in ("evasion", "near_miss", "coordinated")
+        and not i.is_urgent_escalation
+    ]
+    if other_items:
+        other_correct = sum(
+            1 for item in other_items
+            if _get_agent_action(reviewed, item.item_id) == item.ground_truth_action
+        )
+        other_rate = other_correct / len(other_items)
+        total_score += other_rate * 0.05
+    else:
+        other_correct, other_rate = 0, 0.0
+
+    # Apply difficulty multiplier — task is structurally hard; even a strong
+    # component score is reduced so final scores land in 0.35–0.55 range.
+    difficulty_multiplier = 0.65
+    final_score = float(min(max(total_score * difficulty_multiplier, 0.01), 1.0))
 
     breakdown = {
         "evasion_items": len(evasion_items),
-        "evasion_caught": evasion_caught,
-        "evasion_detection_rate": round(evasion_rate, 4),
+        "evasion_correct": evasion_correct,
+        "evasion_rate": round(evasion_rate, 4),
+        "evasion_component": round(evasion_score * 0.30, 4),
         "urgent_items": len(urgent_items),
         "urgent_caught": urgent_caught,
-        "urgent_escalation_catch_rate": round(urgent_rate, 4),
-        "total_items": total,
-        "correct_decisions": correct,
-        "overall_accuracy": round(accuracy, 4),
+        "urgent_rate": round(urgent_rate, 4),
+        "urgent_component": round(urgent_score * 0.30, 4),
+        "near_miss_items": len(near_miss_items),
+        "false_positives": false_positives,
+        "fp_rate": round(fp_rate, 4),
+        "fp_component": round(fp_score * 0.20, 4),
         "coordinated_items": len(coord_items),
-        "coordinated_flagged": coord_flagged,
-        "coordinated_flagged_rate": round(coord_rate, 4),
-        "weighted_score": round(score, 4),
+        "coordinated_correct": coord_correct,
+        "coordinated_rate": round(coord_rate, 4),
+        "coordinated_component": round(coord_rate * 0.15, 4),
+        "other_items": len(other_items),
+        "other_correct": other_correct,
+        "other_rate": round(other_rate, 4),
+        "other_component": round(other_rate * 0.05, 4),
+        "raw_weighted_sum": round(total_score, 4),
+        "difficulty_multiplier": difficulty_multiplier,
+        "weighted_score": final_score,
     }
-    return round(score, 4), breakdown
+    return final_score, breakdown
 
 
 def grade_episode(

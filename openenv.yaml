@@ -9,7 +9,7 @@ license: "MIT"
 python_requires: ">=3.10"
 
 environment:
-  entry_point: "server.main:app"
+  entry_point: "server.app:main"
   interface: "http"
   port: 7860
   health_endpoint: "/health"
