@@ -25,7 +25,7 @@ from openai import OpenAI
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-API_BASE_URL = os.environ.get("API_BASE_URL", "https://api.openai.com/v1")
+API_BASE_URL = os.environ.get("API_BASE_URL", "https://router.huggingface.co/v1")
 API_KEY = os.environ.get("OPENAI_API_KEY", "")
 MODEL_NAME = os.environ.get("MODEL_NAME", "gpt-4o-mini")
 HF_TOKEN = os.environ.get("HF_TOKEN", "")
@@ -240,7 +240,12 @@ Respond with the JSON action object only."""
                 raw = raw[4:]
         raw = raw.strip()
         return json.loads(raw)
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        print(
+            f"[WARN] JSON parse failed on step — using KEEP fallback. "
+            f"Raw response was: {raw[:120]!r}",
+            flush=True,
+        )
         return {
             "action_type": FALLBACK_ACTION,
             "target_item_id": current_item.get("item_id", "unknown"),
@@ -249,6 +254,11 @@ Respond with the JSON action object only."""
             "confidence": 0.5,
         }
     except Exception as e:
+        print(
+            f"[ERROR] LLM call failed: {type(e).__name__}: {e} — using KEEP fallback. "
+            f"Check API_BASE_URL, OPENAI_API_KEY, and MODEL_NAME.",
+            flush=True,
+        )
         return {
             "action_type": FALLBACK_ACTION,
             "target_item_id": current_item.get("item_id", "unknown"),
