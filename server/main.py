@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -154,23 +154,32 @@ async def health() -> Dict[str, str]:
 
 
 @app.post("/reset")
-async def reset(request: ResetRequest) -> StepResult:
+async def reset(raw: Request) -> StepResult:
     """
     Initialize (or re-initialize) an episode.
     Returns the first observation with an empty reward.
+    Accepts JSON body, empty body {}, or no body — all default to
+    task_name='basic_moderation', session_id='default'.
     """
+    try:
+        body = await raw.json()
+    except Exception:
+        body = {}
+    task_name = body.get("task_name", "basic_moderation") if isinstance(body, dict) else "basic_moderation"
+    session_id = body.get("session_id", "default") if isinstance(body, dict) else "default"
+
     valid_tasks = list(TASKS.keys())
-    if request.task_name not in valid_tasks:
+    if task_name not in valid_tasks:
         return StepResult(
             observation=None,
             reward={"value": 0.0, "breakdown": {}, "cumulative": 0.0},  # type: ignore
             done=True,
             info={
-                "error": f"Unknown task '{request.task_name}'. "
+                "error": f"Unknown task '{task_name}'. "
                          f"Valid options: {valid_tasks}"
             },
         )
-    return reset_episode(request.task_name, request.session_id)
+    return reset_episode(task_name, session_id)
 
 
 @app.post("/step")
