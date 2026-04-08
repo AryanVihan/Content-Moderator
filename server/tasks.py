@@ -252,14 +252,15 @@ def grade_adversarial(
             if _get_agent_action(reviewed, item.item_id) == item.ground_truth_action
         )
         evasion_rate = evasion_correct / len(evasion_items)
-        # Partial credit only if agent catches more than half; otherwise sharp penalty
-        evasion_score = evasion_rate if evasion_rate > 0.5 else evasion_rate * 0.3
+        # Proportional credit; softer penalty below 50% (×0.6 not ×0.3)
+        evasion_score = evasion_rate if evasion_rate > 0.5 else evasion_rate * 0.6
         total_score += evasion_score * 0.30
     else:
         evasion_correct, evasion_rate, evasion_score = 0, 0.0, 0.0
 
     # --- Component 2: Urgent escalation catch (30%) — MOST CRITICAL ---
-    # Agent must find all 5 disguised escalations; missing even one is severely penalized.
+    # Agent must find all 5 disguised escalations. Smooth step curve so
+    # catching even 1-2 provides meaningful credit (not a flat 0.05 floor).
     urgent_items = [i for i in items if i.is_urgent_escalation]
     if urgent_items:
         urgent_caught = sum(
@@ -267,15 +268,18 @@ def grade_adversarial(
             if _get_agent_action(reviewed, item.item_id) == "ESCALATE"
         )
         urgent_rate = urgent_caught / len(urgent_items)
-        # Sharp penalty curve: 5/5=1.0, 4/5=0.4, 3/5=0.15, <3/5=0.05
-        if urgent_rate == 1.0:
+        if urgent_rate >= 1.0:       # 5/5
             urgent_score = 1.0
-        elif urgent_rate >= 0.8:
-            urgent_score = 0.4
-        elif urgent_rate >= 0.6:
-            urgent_score = 0.15
-        else:
-            urgent_score = 0.05
+        elif urgent_rate >= 0.8:     # 4/5
+            urgent_score = 0.65
+        elif urgent_rate >= 0.6:     # 3/5
+            urgent_score = 0.35
+        elif urgent_rate >= 0.4:     # 2/5
+            urgent_score = 0.20
+        elif urgent_rate > 0:        # 1/5
+            urgent_score = 0.10
+        else:                        # 0/5
+            urgent_score = 0.0
         total_score += urgent_score * 0.30
     else:
         urgent_caught, urgent_rate, urgent_score = 0, 0.0, 0.0
@@ -289,7 +293,7 @@ def grade_adversarial(
             if _get_agent_action(reviewed, item.item_id) == "REMOVE"
         )
         fp_rate = false_positives / len(near_miss_items)
-        fp_score = max(0.0, 1.0 - (fp_rate * 2.5))  # sharp penalty
+        fp_score = max(0.0, 1.0 - (fp_rate * 2.0))  # reduced from 2.5
         total_score += fp_score * 0.20
     else:
         false_positives, fp_rate, fp_score = 0, 0.0, 1.0

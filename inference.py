@@ -101,11 +101,24 @@ Always read the user_history context:
 - account_age_days < 30 + prior_violations > 0 → higher risk account
 - Multiple near-identical posts from new accounts → coordinated inauthentic behavior → REMOVE
 
-Watch for policy circumvention:
-- Deliberate misspellings (h@te, k*ll, 0 replacing o)
-- Emoji substitutions replacing words
-- Mixed-language content (Romanized Hindi/Tamil) with violent meaning
-- Coded language that clearly implies a slur or threat
+Watch for policy circumvention — these MUST be REMOVE even though they use tricks:
+- Deliberate misspellings (h@te, k*ll, 0 replacing o, 3 replacing e, 1 replacing i)
+- Emoji sequences replacing violent verbs (🔪🔪, 🧹🧹) or derogatory nouns (🐀🐀🐀)
+- Coded language and dogwhistles ("1488", "final solution" targeting a group, "it is what it is with X")
+- Romanized or foreign-script slurs ("these foreign types", "these outsiders")
+- Any content that is clearly hate speech when read normally, regardless of obfuscation
+
+ESCALATE immediately — do not REMOVE or KEEP these:
+- Any post signalling imminent self-harm: "planning my exit", "tonight is the night",
+  "saying goodbye", "stockpiling [anything]", "nobody would notice if I disappeared",
+  "made my decision", "I have it all planned" — even if phrased as casual venting
+- Specific credible threats: named target + location + "I know their schedule"
+
+Near-miss content that looks like a violation but is NOT — use KEEP:
+- "final solution to climate change / budget deficit" — innocent use of phrase
+- "kill it at the presentation / destroy the competition" — figurative language
+- Immigrant/minority activists organizing or voting — protected political speech
+- "execute our plan / dominate the market" — business language
 """
 
 
@@ -199,6 +212,17 @@ def call_llm(llm_client: OpenAI, obs: Dict[str, Any]) -> Dict[str, Any]:
     current_item = obs.get("current_item", {})
     user_history = current_item.get("user_history", {})
 
+    # Build recent-items context for coordinated behaviour detection
+    reviewed_so_far = obs.get("reviewed_so_far", [])
+    recent = reviewed_so_far[-5:] if reviewed_so_far else []
+    recent_context = ""
+    if recent:
+        recent_lines = "\n".join(
+            f"  - item {r.get('item_id', '?')}: action={r.get('action_taken', '?')}"
+            for r in recent
+        )
+        recent_context = f"\nRecent decisions (last {len(recent)}):\n{recent_lines}\n"
+
     user_message = f"""Review the following flagged content item:
 
 Item ID: {current_item.get('item_id', 'unknown')}
@@ -217,7 +241,7 @@ Posted at: {current_item.get('timestamp', '')}
 
 Queue position: {obs.get('queue_position', '?')}/{obs.get('queue_total', '?')}
 Goal: {obs.get('goal', '')}
-
+{recent_context}
 Last action error (if any): {obs.get('last_action_error') or 'none'}
 
 Respond with the JSON action object only."""

@@ -212,14 +212,14 @@ NEWSWORTHY_GRAPHIC_TEMPLATES = [
 # Fill-in values
 # ---------------------------------------------------------------------------
 
-GROUPS = ["[GROUP_A]", "[GROUP_B]", "[GROUP_C]", "[MINORITY_GROUP]"]
+GROUPS = ["immigrants", "refugees", "minorities", "foreigners", "outsiders"]
 PLACES = ["school", "neighbourhood", "community", "city", "country", "workplace"]
 PLACES_NAMED = ["Springfield", "Riverside", "Lakewood", "Maplewood", "Fairview"]
-COUNTRIES = ["[COUNTRY_A]", "[COUNTRY_B]", "[COUNTRY_C]"]
-CITIES = ["[CITY_A]", "[CITY_B]", "[CITY_C]", "[CITY_D]"]
-ROMAN_SLURS = ["[ROMAN_SLUR_PLACEHOLDER_A]", "[ROMAN_SLUR_PLACEHOLDER_B]"]
-ITEMS = ["medication", "supplies", "everything I need", "the means"]
-NAMES = ["[PERSON_PLACEHOLDER]", "the target", "them"]
+COUNTRIES = ["this country", "our nation", "this nation", "our homeland"]
+CITIES = ["this city", "our town", "this district", "our community"]
+ROMAN_SLURS = ["these foreign types", "those outsiders", "these immigrants"]
+ITEMS = ["pills", "what I need", "my supplies", "everything"]
+NAMES = ["a local official", "a specific person", "someone I know"]
 MOVIES = ["The Last Chapter", "Starfall", "Beyond Tomorrow", "Echoes"]
 FOODS = ["Italian", "Thai", "Mexican", "Indian", "Japanese"]
 HOBBIES = ["woodworking", "painting", "knitting", "coding", "gardening"]
