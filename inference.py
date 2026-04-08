@@ -25,17 +25,13 @@ from openai import OpenAI
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-API_BASE_URL = os.environ.get("API_BASE_URL", "https://router.huggingface.co/v1")
-API_KEY = os.environ.get("OPENAI_API_KEY", "")
-MODEL_NAME = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
+API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
+MODEL_NAME = os.getenv("MODEL_NAME") or "Qwen/Qwen2.5-72B-Instruct"
 HF_TOKEN = os.getenv("HF_TOKEN")
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
-ENV_URL = os.environ.get("ENV_URL", "http://localhost:7860")
+API_KEY = os.getenv("OPENAI_API_KEY") or HF_TOKEN or ""
+ENV_URL = os.getenv("ENV_URL") or "http://localhost:7860"
 
-# Use HF_TOKEN as fallback API key if OPENAI_API_KEY not set
-# (for HuggingFace Inference API compatibility)
-if not API_KEY and HF_TOKEN:
-    API_KEY = HF_TOKEN or ""
 
 MAX_STEPS = 50
 SUCCESS_SCORE_THRESHOLD = 0.6
@@ -138,10 +134,10 @@ def log_step(
     done: bool,
     error: Optional[str],
 ) -> None:
-    error_str = str(error) if error else "null"
+    error_val = error if error else "null"
+    done_val = str(done).lower()
     print(
-        f"[STEP] step={step} action={action!r} "
-        f"reward={reward:.4f} done={done} error={error_str}",
+        f"[STEP] step={step} action={action} reward={reward:.2f} done={done_val} error={error_val}",
         flush=True,
     )
 
@@ -152,9 +148,9 @@ def log_end(
     score: float,
     rewards: List[float],
 ) -> None:
+    rewards_str = ",".join(f"{r:.2f}" for r in rewards)
     print(
-        f"[END] success={success} steps={steps} "
-        f"score={score:.4f} rewards={rewards}",
+        f"[END] success={str(success).lower()} steps={steps} score={score:.2f} rewards={rewards_str}",
         flush=True,
     )
 
