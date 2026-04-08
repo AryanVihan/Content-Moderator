@@ -43,6 +43,7 @@ dependencies = [
 
 [project.scripts]
 meta-mod-env = "server.app:main"
+server = "server.app:main"
 
 [project.urls]
 Homepage = "https://huggingface.co/spaces/Aryan176/meta-mod-env"

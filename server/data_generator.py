@@ -807,7 +807,16 @@ def generate_adversarial_items() -> List[ContentItem]:
 class DataGenerator:
     """Entry point for generating task-specific item queues."""
 
+    def __init__(self, seed: int = 42):
+        self._seed = seed
+
+    def _reset_rng(self) -> None:
+        """Reset the module-level RNG to the stored seed for reproducibility."""
+        global RNG
+        RNG = random.Random(self._seed)
+
     def generate(self, task_name: str) -> List[ContentItem]:
+        self._reset_rng()
         if task_name == "basic_moderation":
             return generate_basic_items()
         elif task_name == "contextual_moderation":
@@ -816,3 +825,35 @@ class DataGenerator:
             return generate_adversarial_items()
         else:
             raise ValueError(f"Unknown task: {task_name}")
+
+    @staticmethod
+    def _item_to_dict(item: "ContentItem") -> dict:
+        """Convert a ContentItem to a full dict including excluded ground-truth fields."""
+        base = item.model_dump()
+        base.update({
+            "ground_truth_action": item.ground_truth_action,
+            "ground_truth_policy": item.ground_truth_policy,
+            "difficulty_notes": item.difficulty_notes,
+            "is_urgent": item.is_urgent,
+            "is_evasion": item.is_evasion,
+            "is_coordinated": item.is_coordinated,
+            "needs_context": item.needs_context,
+            "category": item.category,
+            "is_urgent_escalation": item.is_urgent_escalation,
+        })
+        return base
+
+    def generate_basic_items(self) -> List[dict]:
+        """Return basic moderation items as dicts (reproducible with seed)."""
+        self._reset_rng()
+        return [self._item_to_dict(item) for item in generate_basic_items()]
+
+    def generate_contextual_items(self) -> List[dict]:
+        """Return contextual moderation items as dicts (reproducible with seed)."""
+        self._reset_rng()
+        return [self._item_to_dict(item) for item in generate_contextual_items()]
+
+    def generate_adversarial_items(self) -> List[dict]:
+        """Return adversarial moderation items as dicts (reproducible with seed)."""
+        self._reset_rng()
+        return [self._item_to_dict(item) for item in generate_adversarial_items()]

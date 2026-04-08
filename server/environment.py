@@ -288,3 +288,19 @@ def get_state(session_id: str = "default") -> Dict[str, Any]:
 
 def list_sessions() -> List[str]:
     return list(_sessions.keys())
+
+
+class Environment:
+    """Convenience wrapper exposing the session-based environment API."""
+
+    def reset(self, task_name: str, session_id: str = "default") -> StepResult:
+        return reset_episode(task_name, session_id)
+
+    def step(self, action: Action, session_id: str = "default") -> StepResult:
+        return step_episode(action, session_id)
+
+    def get_state(self, session_id: str = "default") -> Dict[str, Any]:
+        return get_state(session_id)
+
+    def list_sessions(self) -> List[str]:
+        return list_sessions()

@@ -899,6 +899,36 @@ The specification requires that graders never return the same score for differen
 
 ---
 
+## 7b. Action Space
+
+The agent can take one of five discrete actions on each content item:
+
+| Action | Description |
+|---|---|
+| `REMOVE` | Permanently remove the content. Requires `policy_violated` to be set. |
+| `KEEP` | Leave the content up — no violation found. |
+| `ESCALATE` | Escalate to a human reviewer (required for urgent / self-harm items). |
+| `ADD_WARNING_LABEL` | Keep the content but attach a warning label (borderline/graphic). |
+| `REQUEST_CONTEXT` | Ask for more context before deciding (neutral reward). |
+
+Each action is submitted via `POST /step` with the `action_type`, `target_item_id`, `reasoning`, `confidence`, and optional `policy_violated` fields.
+
+## 7c. Observation Space
+
+Each step, the agent receives an `Observation` object containing:
+
+| Field | Type | Description |
+|---|---|---|
+| `goal` | str | Task-level instructions and policy guidelines |
+| `current_item` | AgentVisibleContentItem | The content item to review (id, text, platform, user_history, report_count, timestamp) |
+| `queue_position` | int | Position in queue (1-indexed) |
+| `queue_total` | int | Total items in the queue |
+| `reviewed_so_far` | List[ReviewedItem] | History of decisions made this episode |
+| `context` | dict | Task metadata: task name, difficulty, session_id, steps_remaining |
+| `last_action_error` | str or null | Error from previous action (e.g. wrong item_id), null otherwise |
+
+Ground-truth fields (`ground_truth_action`, `ground_truth_policy`, etc.) are excluded from the observation — the agent only sees what a real moderator would see.
+
 ## 8. OpenEnv Compliance — What the Standard Requires
 
 MetaModEnv passes `openenv validate .` with three deployment modes active:

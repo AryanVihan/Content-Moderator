@@ -159,3 +159,16 @@ def normalize_score(
         return 0.0
     score = (raw_reward - min_possible) / (max_possible - min_possible)
     return max(0.0, min(1.0, score))
+
+
+class RewardCalculator:
+    """Convenience wrapper around module-level reward functions."""
+
+    def compute_step_reward(self, action: Action, item: "ContentItem") -> Tuple[float, Dict[str, float]]:
+        return compute_step_reward(action, item)
+
+    def compute_episode_bonus(self, reviewed_items: list, total_items: int, steps_used: int, max_steps: int) -> Tuple[float, Dict[str, float]]:
+        return compute_episode_bonus(reviewed_items, total_items, steps_used, max_steps)
+
+    def normalize_score(self, raw_reward: float, min_possible: float, max_possible: float) -> float:
+        return normalize_score(raw_reward, min_possible, max_possible)
